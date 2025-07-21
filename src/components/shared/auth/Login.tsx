@@ -11,9 +11,11 @@ import {
 } from '@mantine/core'
 import React from 'react'
 import { Controller, FieldErrors, FormProvider, useForm } from 'react-hook-form'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { toast } from 'react-toastify'
 
 import { loginFormSchema } from '@/components/shared/auth/schema'
+import useAuthContext from '@/hooks/use-auth-context'
 import { availableRoutes } from '@/routes/routesConfig'
 import { TLoginForm } from '@/types/schemaTypes'
 
@@ -33,7 +35,20 @@ const Login: React.FC = () => {
     formState: { errors },
   } = formMethods
 
-  const successHandler = async (data: TLoginForm) => {}
+  const { login } = useAuthContext()
+  const navigate = useNavigate()
+
+  const successHandler = async (data: TLoginForm) => {
+    try {
+      await login(data)
+      navigate(availableRoutes.HOME)
+      toast.success('You are logged in successfully!')
+    } catch (error) {
+      if (error instanceof Error) {
+        toast.error(error?.message)
+      }
+    }
+  }
 
   const errorHandler = (errors: FieldErrors) => {
     console.log(errors)

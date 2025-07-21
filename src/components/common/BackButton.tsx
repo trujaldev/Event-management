@@ -1,14 +1,13 @@
 import { Button } from '@mantine/core'
+import { FaArrowLeftLong } from 'react-icons/fa6'
 import { useNavigate } from 'react-router-dom'
-
-import LeftArrow from '@/assets/svg/LeftArrow'
 
 const BackButton = () => {
   const navigate = useNavigate()
 
   return (
     <Button
-      leftSection={<LeftArrow />}
+      leftSection={<FaArrowLeftLong />}
       className="rounded-full"
       onClick={() => navigate(-1)}
     >

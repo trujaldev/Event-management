@@ -11,9 +11,14 @@ import {
 } from '@mantine/core'
 import React from 'react'
 import { Controller, FieldErrors, FormProvider, useForm } from 'react-hook-form'
+import { FaArrowLeftLong } from 'react-icons/fa6'
+import { useNavigate } from 'react-router-dom'
+import { toast } from 'react-toastify'
 
 import BackButton from '@/components/common/BackButton'
 import { signUpFormSchema } from '@/components/shared/auth/schema'
+import useAuthContext from '@/hooks/use-auth-context'
+import { availableRoutes } from '@/routes/routesConfig'
 import { TSignUpForm } from '@/types/schemaTypes'
 
 const Signup: React.FC = () => {
@@ -34,7 +39,22 @@ const Signup: React.FC = () => {
     formState: { errors },
   } = formMethods
 
-  const successHandler = async (data: TSignUpForm) => {}
+  const { signUp } = useAuthContext()
+  const navigate = useNavigate()
+
+  const successHandler = async (data: TSignUpForm) => {
+    const { confirm_password, ...restData } = data
+
+    try {
+      await signUp(restData)
+      toast.success('You have successfully signed up.')
+      navigate(availableRoutes.LOGIN)
+    } catch (error) {
+      if (error instanceof Error) {
+        toast.error(error?.message)
+      }
+    }
+  }
 
   const errorHandler = (errors: FieldErrors) => {
     console.log(errors)
