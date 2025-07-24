@@ -1,23 +1,32 @@
+import { useLocalStorage } from '@mantine/hooks'
 import { compare, hash } from 'bcrypt-ts'
 import { PropsWithChildren } from 'react'
 
 import { AuthContext } from '@/hooks/use-auth-context'
+import useEventContext from '@/hooks/use-event-context'
 import {
   TAuthenticatedUser,
   TLoginForm,
   TSignUpForm,
   TUser,
 } from '@/types/schemaTypes'
-import useLocalStorage from '@/hooks/use-local-storage'
+import { dummyEvents } from '@/utils/dummyData'
 
 const AuthProvider = ({ children }: PropsWithChildren) => {
-  const { persistedValue: usersList, saveToLocalStorage: saveUsersList } =
-    useLocalStorage<TUser[]>('users', [])
-  const {
-    persistedValue: user,
-    saveToLocalStorage: saveUser,
-    clearPersistedValue: logoutAuthUser,
-  } = useLocalStorage<TAuthenticatedUser | null>('user', null)
+  const [usersList, saveUsersList] = useLocalStorage<TUser[]>({
+    key: 'users',
+    defaultValue: [],
+    getInitialValueInEffect: false,
+  })
+
+  const [user, saveUser, clearLocalStorageUserKey] =
+    useLocalStorage<TAuthenticatedUser | null>({
+      key: 'user',
+      defaultValue: null,
+      getInitialValueInEffect: false,
+    })
+
+  const { saveMultipleEvents, clearLocalStorageEventKey } = useEventContext()
   const saltRounds = 10
 
   const signUp = async (userData: Omit<TSignUpForm, 'confirm_password'>) => {
@@ -69,6 +78,7 @@ const AuthProvider = ({ children }: PropsWithChildren) => {
       }
 
       saveUser(restUserData)
+      saveMultipleEvents(dummyEvents)
     } catch (error) {
       if (error instanceof Error) {
         throw new Error(error?.message)
@@ -77,7 +87,8 @@ const AuthProvider = ({ children }: PropsWithChildren) => {
   }
 
   const logout = () => {
-    logoutAuthUser()
+    clearLocalStorageUserKey()
+    clearLocalStorageEventKey()
   }
 
   return (

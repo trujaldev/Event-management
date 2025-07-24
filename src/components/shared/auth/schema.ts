@@ -11,7 +11,7 @@ export const passwordSchema = z
     .regex(/[!@#$%^&*(),.?":{}|<>]/, "Password must contain at least one special character")
 
 export const loginFormSchema = z.object({
-    email: z.email({ message: "Invalid email format" }),
+    email: z.string().email({ message: "Invalid email format" }),
     password: passwordSchema
 })
 

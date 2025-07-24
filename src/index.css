@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer mantine-core;
+@layer mantine-core, mantine-datatable;
 
 :root {
   line-height: 1.5;
@@ -30,4 +30,16 @@ body,
 
 .h-inherit {
   height: inherit;
+}
+
+.mantine-datatable-table[data-highlight-on-hover] tbody tr:hover {
+  @apply bg-alt-blue-4;
+}
+
+.mantine-datatable-table[data-striped] tbody tr:nth-of-type(odd) {
+  @apply bg-alt-white-2 hover:bg-alt-blue-4;
+}
+
+.mantine-Table-th {
+  @apply p-4;
 }
