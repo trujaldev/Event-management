@@ -11,7 +11,6 @@ import {
 } from '@mantine/core'
 import React from 'react'
 import { Controller, FieldErrors, FormProvider, useForm } from 'react-hook-form'
-import { FaArrowLeftLong } from 'react-icons/fa6'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 
