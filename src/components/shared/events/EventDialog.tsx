@@ -3,10 +3,12 @@ import {
   Button,
   Grid,
   Group,
+  List,
   Modal,
   Radio,
   Select,
   Stack,
+  Text,
   TextInput,
   Textarea,
 } from '@mantine/core'
@@ -14,12 +16,16 @@ import { DateTimePicker } from '@mantine/dates'
 import dayjs from 'dayjs'
 import React, { useMemo } from 'react'
 import { Controller, FieldErrors, FormProvider, useForm } from 'react-hook-form'
+import { toast } from 'react-toastify'
+import { v4 as uuidv4 } from 'uuid'
 
+import ForEach from '@/components/common/ForEach'
 import { EventFormValues, eventSchema } from '@/components/shared/events/schema'
 import useAuthContext from '@/hooks/use-auth-context'
 import useEventContext from '@/hooks/use-event-context'
-import { EventType, IEvent, TModalMode } from '@/types/types'
+import { EventType, IEvent, ModalModeType, TModalMode } from '@/types/types'
 import { categoryOptions } from '@/utils/constants'
+import { getAvailableSlots } from '@/utils/utils'
 
 type EventDialogProps = {
   open: boolean
@@ -27,6 +33,7 @@ type EventDialogProps = {
   mode: TModalMode | null
   selectedEvent: IEvent | null
   onSubmit: () => void
+  startTransition: React.TransitionStartFunction
 }
 
 export const EventDialog: React.FC<EventDialogProps> = ({
@@ -35,21 +42,23 @@ export const EventDialog: React.FC<EventDialogProps> = ({
   mode,
   selectedEvent,
   onSubmit,
+  startTransition,
 }) => {
   const { isReadMode, isEditMode, isCreateMode } = useMemo(
     () => ({
-      isReadMode: mode === 'read',
-      isEditMode: mode === 'edit',
-      isCreateMode: mode === 'create',
+      isReadMode: mode === ModalModeType.VIEW,
+      isEditMode: mode === ModalModeType.EDIT,
+      isCreateMode: mode === ModalModeType.CREATE,
     }),
     [mode],
   )
 
-  const { updateEvent, saveEvent } = useEventContext()
+  const { events, updateEvent, saveEvent } = useEventContext()
   const { user } = useAuthContext()
 
   const initialFormValues = useMemo(
     () => ({
+      id: selectedEvent?.id,
       title: selectedEvent?.title || '',
       description: selectedEvent?.description || '',
       eventType: selectedEvent?.eventType || EventType.ONLINE,
@@ -79,15 +88,71 @@ export const EventDialog: React.FC<EventDialogProps> = ({
 
   const { eventType } = watch()
 
+  const checkConflictAndShowToast = (
+    newEvent: EventFormValues,
+    allEvents: IEvent[],
+  ) => {
+    const newStart = dayjs(newEvent.startDateTime)
+    const newEnd = dayjs(newEvent.endDateTime)
+
+    const eventsOnSameDay = allEvents?.filter((e) =>
+      dayjs(e.startDateTime).isSame(newStart, 'day'),
+    )
+
+    const isOverlapping = eventsOnSameDay?.some((event) => {
+      const existingStart = dayjs(event.startDateTime)
+      const existingEnd = dayjs(event.endDateTime)
+      return newStart.isBefore(existingEnd) && newEnd.isAfter(existingStart)
+    })
+
+    if (isOverlapping) {
+      const slots = getAvailableSlots(
+        eventsOnSameDay || [],
+        newStart.toISOString(),
+      )
+
+      toast.error(
+        <Stack>
+          <Text className="leading-5">
+            The selected time overlaps with another event. please select from
+            these available slots for the selected date:
+          </Text>
+          <List>
+            <ForEach
+              of={slots || []}
+              render={(el) => {
+                return (
+                  <List.Item>
+                    <Text className="leading-none" key={`${el.from}-${el.to}`}>
+                      {el.from} - {el.to}
+                    </Text>
+                  </List.Item>
+                )
+              }}
+            />
+          </List>
+        </Stack>,
+      )
+      return true
+    }
+
+    return false
+  }
+
   const successHandler = async (data: EventFormValues) => {
-    console.log(data, 'data------')
+    const isConflict = checkConflictAndShowToast(data, events || [])
+
+    if (isConflict) return
+
     if (isCreateMode) {
       const newEvent = {
         ...data,
-        id: Date.now().toString(),
-        organizer: data?.organizer,
+        id: uuidv4(),
       }
-      saveEvent(newEvent)
+      startTransition(() => {
+        saveEvent(newEvent)
+      })
+      toast.success('Event created successfully.')
     }
 
     if (isEditMode) {
@@ -96,12 +161,17 @@ export const EventDialog: React.FC<EventDialogProps> = ({
         id: selectedEvent?.id || '',
         organizer: data?.organizer,
       }
-      updateEvent(updatedEvent)
+      startTransition(() => {
+        updateEvent(updatedEvent)
+      })
+      toast.success('Event updated successfully.')
     }
     onSubmit()
   }
 
-  const errorHandler = (errors: FieldErrors) => {}
+  const errorHandler = (errors: FieldErrors) => {
+    console.log(errors)
+  }
 
   return (
     <Modal
@@ -119,13 +189,13 @@ export const EventDialog: React.FC<EventDialogProps> = ({
       classNames={{
         content: 'rounded-xl',
         header: 'border border-b',
-        body: 'p-0',
+        body: 'p-0 h-[30rem] overflow-y-auto',
       }}
     >
-      <Modal.Body>
+      <Modal.Body className="p-4">
         <FormProvider {...methods}>
           <form onSubmit={handleSubmit(successHandler, errorHandler)}>
-            <Stack gap={12} className="p-4">
+            <Stack gap={12}>
               <Grid>
                 <Grid.Col span={12} className="pt-0">
                   <Controller
@@ -338,7 +408,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({
                     Cancel
                   </Button>
                   <Button type="submit">
-                    {isCreateMode ? 'Create Event' : 'Save Event'}
+                    {isCreateMode ? 'Create' : 'Save Event'}
                   </Button>
                 </Group>
               )}

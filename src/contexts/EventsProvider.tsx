@@ -13,16 +13,12 @@ const EventsProvider = ({ children }: PropsWithChildren) => {
     getInitialValueInEffect: false,
   })
 
-  const getEventById = (eventId: string) => {
-    return events?.find((event) => event.id === eventId) ?? null
-  }
-
   const saveEvent = (event: IEvent) => {
-    setEvents((prev) => [...prev, event])
+    setEvents((prev) => [event, ...prev])
   }
 
   const saveMultipleEvents = (events: IEvent[]) => {
-    setEvents((prev) => [...prev, ...events])
+    setEvents((prev) => [...events, ...prev])
   }
 
   const updateEvent = (updatedEvent: IEvent) => {
@@ -49,7 +45,6 @@ const EventsProvider = ({ children }: PropsWithChildren) => {
         saveMultipleEvents,
         deleteEvent,
         updateEvent,
-        getEventById,
         clearLocalStorageEventKey,
       }}
     >
