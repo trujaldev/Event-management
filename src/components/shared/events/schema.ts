@@ -5,6 +5,7 @@ import z from "zod"
 const eventTypeEnum = z.enum([EventType.ONLINE, EventType.IN_PERSON]);
 
 export const eventSchema = z.object({
+    id: z.string().optional(),
     title: z.string().min(1, 'Title is required'),
     description: z.string().min(1, 'Description is required'),
     eventType: eventTypeEnum,

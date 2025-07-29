@@ -43,3 +43,13 @@ body,
 .mantine-Table-th {
   @apply p-4;
 }
+
+input,
+textarea,
+button[data-disabled='true'] {
+  @apply !text-black;
+}
+
+.Toastify__toast--error {
+  align-items: flex-start;
+}

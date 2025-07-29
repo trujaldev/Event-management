@@ -15,6 +15,12 @@ export enum EventType {
     IN_PERSON = 'in_person'
 }
 
+export enum ModalModeType {
+    VIEW = 'view',
+    EDIT = 'edit',
+    CREATE = 'create'
+}
+
 export interface IEvent {
     id: string
     title: string
@@ -28,4 +34,15 @@ export interface IEvent {
     organizer: TAuthenticatedUser
 }
 
-export type TModalMode = 'create' | 'edit' | 'read'
+export type TModalMode = 'create' | 'edit' | 'view'
+
+export type TDateRange = [string | null, string | null]
+
+export interface IEventFilters {
+    search: string
+    eventType: EventType | null
+    category: string
+    sortKey: string
+    sortDir: string
+    dateRange: TDateRange
+}

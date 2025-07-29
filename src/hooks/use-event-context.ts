@@ -8,7 +8,6 @@ export interface EventContextType {
     clearLocalStorageEventKey: () => void
     deleteEvent: (eventId: string) => void
     updateEvent: (event: IEvent) => void
-    getEventById: (eventId: string) => IEvent | null
 }
 
 export const EventContext = createContext<EventContextType | null>(null);
