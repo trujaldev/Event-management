@@ -3,12 +3,10 @@ import {
   Button,
   Grid,
   Group,
-  List,
   Modal,
   Radio,
   Select,
   Stack,
-  Text,
   TextInput,
   Textarea,
 } from '@mantine/core'
@@ -19,13 +17,12 @@ import { Controller, FieldErrors, FormProvider, useForm } from 'react-hook-form'
 import { toast } from 'react-toastify'
 import { v4 as uuidv4 } from 'uuid'
 
-import ForEach from '@/components/common/ForEach'
 import { EventFormValues, eventSchema } from '@/components/shared/events/schema'
 import useAuthContext from '@/hooks/use-auth-context'
 import useEventContext from '@/hooks/use-event-context'
 import { EventType, IEvent, ModalModeType, TModalMode } from '@/types/types'
 import { categoryOptions } from '@/utils/constants'
-import { getAvailableSlots } from '@/utils/utils'
+import { getAvailableSlotsForRange } from '@/utils/utils'
 
 type EventDialogProps = {
   open: boolean
@@ -76,7 +73,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({
         email: user?.email || '',
       },
     }),
-    [selectedEvent, open],
+    [selectedEvent, open, mode],
   )
 
   const methods = useForm<EventFormValues>({
@@ -84,55 +81,39 @@ export const EventDialog: React.FC<EventDialogProps> = ({
     values: initialFormValues,
   })
 
-  const { control, watch, handleSubmit, clearErrors } = methods
+  const { control, watch, handleSubmit, clearErrors, reset, setError } = methods
 
   const { eventType } = watch()
 
-  const checkConflictAndShowToast = (
+  const checkConflictAndSetFieldErrors = (
     newEvent: EventFormValues,
     allEvents: IEvent[],
   ) => {
     const newStart = dayjs(newEvent.startDateTime)
     const newEnd = dayjs(newEvent.endDateTime)
 
-    const eventsOnSameDay = allEvents?.filter((e) =>
-      dayjs(e.startDateTime).isSame(newStart, 'day'),
-    )
-
-    const isOverlapping = eventsOnSameDay?.some((event) => {
+    const overlappingEvents = allEvents?.filter((event) => {
       const existingStart = dayjs(event.startDateTime)
       const existingEnd = dayjs(event.endDateTime)
       return newStart.isBefore(existingEnd) && newEnd.isAfter(existingStart)
     })
 
+    const isOverlapping = overlappingEvents.length > 0
+
     if (isOverlapping) {
-      const slots = getAvailableSlots(
-        eventsOnSameDay || [],
-        newStart.toISOString(),
+      const slots = getAvailableSlotsForRange(
+        newStart,
+        newEnd,
+        overlappingEvents,
       )
 
-      toast.error(
-        <Stack>
-          <Text className="leading-5">
-            The selected time overlaps with another event. please select from
-            these available slots for the selected date:
-          </Text>
-          <List>
-            <ForEach
-              of={slots || []}
-              render={(el) => {
-                return (
-                  <List.Item>
-                    <Text className="leading-none" key={`${el.from}-${el.to}`}>
-                      {el.from} - {el.to}
-                    </Text>
-                  </List.Item>
-                )
-              }}
-            />
-          </List>
-        </Stack>,
-      )
+      const slotMessage =
+        `Overlapping with another event.\nAvailable time slots:\n` +
+        slots.map((s) => `${s.from} - ${s.to}`).join('\n')
+
+      setError('startDateTime', { message: slotMessage })
+      setError('endDateTime', { message: slotMessage })
+
       return true
     }
 
@@ -140,7 +121,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({
   }
 
   const successHandler = async (data: EventFormValues) => {
-    const isConflict = checkConflictAndShowToast(data, events || [])
+    const isConflict = checkConflictAndSetFieldErrors(data, events || [])
 
     if (isConflict) return
 
@@ -176,7 +157,10 @@ export const EventDialog: React.FC<EventDialogProps> = ({
   return (
     <Modal
       opened={open}
-      onClose={onClose}
+      onClose={() => {
+        onClose()
+        reset(initialFormValues)
+      }}
       size={'xl'}
       centered
       title={
