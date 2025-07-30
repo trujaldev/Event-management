@@ -9,6 +9,7 @@ import qs from 'query-string'
 import React, { useMemo, useState, useTransition } from 'react'
 import { FaEdit, FaEye, FaTrash } from 'react-icons/fa'
 import { useLocation } from 'react-router-dom'
+import { toast } from 'react-toastify'
 
 import EventTableHeader from '@/components/shared/events/EventTableHeader'
 import useEventContext from '@/hooks/use-event-context'
@@ -211,7 +212,10 @@ const Events: React.FC = () => {
               title="Delete"
               fill="#014778"
               size={16}
-              onClick={() => deleteEvent(record?.id)}
+              onClick={() => {
+                deleteEvent(record?.id)
+                toast.success('Event deleted successfully')
+              }}
             />
           </Flex>
         ),
